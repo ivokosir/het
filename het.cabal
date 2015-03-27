@@ -1,0 +1,52 @@
+name:                het
+version:             0.1.0.0
+synopsis:            Gui toolkit written in haskell.
+
+-- A longer description of the package.
+-- description:         
+
+license:             MIT
+license-file:        LICENSE
+author:              Ivo Kosir
+maintainer:          ivo.kosir93@gmail.com
+
+-- A copyright notice.
+-- copyright:           
+
+category:            Graphics
+build-type:          Simple
+
+-- Extra files to be distributed with the package, such as examples or a 
+-- README.
+-- extra-source-files:  
+
+cabal-version:       >=1.10
+
+executable test
+  hs-source-dirs:      test
+  main-is:             Main.hs
+  build-depends:       base >=4.7 && <4.8,
+                       het
+  default-language:    Haskell2010
+
+library
+  -- Modules exported by the library.
+  exposed-modules:     Het
+  
+  -- Modules included in this library but not exported.
+  -- other-modules:       
+  
+  -- LANGUAGE extensions used by modules in this package.
+  -- other-extensions:    
+  
+  -- Other library packages from which modules are imported.
+  build-depends:       base >=4.7 && <4.8,
+                       stm >=2.0,
+                       random >=1.0
+  
+  -- Directories containing source files.
+  hs-source-dirs:      src
+  
+  -- Base language which the package is written in.
+  default-language:    Haskell2010
+  
