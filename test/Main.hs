@@ -6,6 +6,7 @@ import Control.Monad
 import Het
 
 main = do
-  read <- start $ (\ str int -> str ++ show int) <$> helloSignal <*> randomCycle
+  read <- start $
+    keepWhen ((<3) <$> foldp (\ _ i -> i + 1) 0 timeoutSignal) helloSignal
   forever $ print =<< read
 

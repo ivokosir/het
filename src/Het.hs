@@ -6,6 +6,8 @@ import Control.Concurrent.STM
 import Control.Monad
 import System.Random
 
+import Sdl2
+
 data Signal a = Signal ((a -> STM ()) -> IO ())
 
 instance Functor Signal where  
@@ -27,9 +29,23 @@ instance Applicative Signal where
         (False, False) -> return ()
         _ -> write $ x1 x2
    where
-    forcePut v x = do
-      tryTakeTMVar v
-      putTMVar v (x, True)
+    forcePut v x = tryTakeTMVar v >> putTMVar v (x, True)
+
+foldp :: (a -> b -> b) -> b -> Signal a -> Signal b
+foldp f initial (Signal run) = Signal $ \ write -> do
+  v <- atomically $ write initial >> newTMVar initial
+  run $ \ x -> do
+    state <- (f x <$> takeTMVar v)
+    putTMVar v state
+    write state
+
+keepWhen :: Signal Bool -> Signal a -> Signal a
+keepWhen (Signal runFilter) (Signal run) = Signal $ \ write -> do
+  v <- atomically newEmptyTMVar
+  forkIO . runFilter $ \ x -> tryTakeTMVar v >> putTMVar v x
+  run $ \ x -> do
+    filter <- readTMVar v
+    when filter $ write x
 
 {- |Runs signal in new thread and returns 'System.IO.IO' function to read output.
 Example of usage:
@@ -41,8 +57,20 @@ Example of usage:
 start :: Signal a -> IO (IO a)
 start (Signal run) = do
   v <- atomically newEmptyTMVar
-  forkIO . run $ putTMVar v
+  forkIO . run $ \ x -> tryTakeTMVar v >> putTMVar v x
   return . atomically $ takeTMVar v
+
+testFilter :: Signal Bool
+testFilter = Signal $ \ write -> forever $ do
+  atomically $ write False
+  threadDelay 1700000
+  atomically $ write True
+  threadDelay 1700000
+
+timeoutSignal :: Signal ()
+timeoutSignal = Signal $ \ write -> forever $ do
+  threadDelay 1000000
+  atomically $ write ()
 
 helloSignal :: Signal String
 helloSignal = Signal $ \ write -> forever $ do
@@ -54,4 +82,9 @@ randomCycle = Signal $ \ write -> forever $ do
   x <- randomRIO (0, 10)
   atomically (write x)
   threadDelay 1000000
+
+sdlSignal :: Signal ()
+sdlSignal = Signal $ \ write -> do
+  Sdl2.init Sdl2.videoFlag
+  atomically $ write ()
 
